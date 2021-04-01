@@ -1,72 +1,113 @@
 // Fill out your copyright notice in the Description page of Project Settings.
+#include <random>
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 #include "BullCowCartridge.h"
 
 void UBullCowCartridge::BeginPlay() // When the game starts
 {
     Super::BeginPlay();
 
-    GreetingsMessage();
-    GenerateHiddenWord();
-    AskForGuess();
-
+    GetWordList();
+    SetupGame();
 }
 
 void UBullCowCartridge::OnInput(const FString& Input) // When the player hits enter
 {
-    ClearScreen();
-    if (Input == HiddenWord)
+    if (!bGameOver)
     {
-        PrintLine(TEXT("You have Won!"));
+        ProcessGuess(Input);
     }
     else
     {
-        WrongInputHandler(Input);
+        SetupGame();     
     }
-    PrintLine(Input);
 }
 
-bool UBullCowCartridge::PlayerInputIsCorrect(const FString& Input)
+void UBullCowCartridge::SetupGame()
 {
-    if (Input.Len() != WordLength)
+    HiddenWord = Words[];
+    Lives = HiddenWord.Len();
+    bGameOver = false;
+    bPlayerWon = false;
+    ClearScreen();
+    PrintLine(TEXT("Welcome to Bulls & Cows!"));
+    PrintLine(TEXT("Guess the %i letter word!"), HiddenWord.Len());
+
+    const TCHAR WE[] = TEXT("cake");
+}
+
+bool UBullCowCartridge::PlayerInputIsCorrect(const FString& Input) const
+{
+    return ((Input.Len() == HiddenWord.Len()) && IsIsogram(Input));
+}
+
+
+void UBullCowCartridge::EndGame()
+{
+    bGameOver = true;
+    if (bPlayerWon)
     {
-        return false;
+        PrintLine(TEXT("Congratulations! You have Won! The Answer was: %s"), *HiddenWord);
+    }
+    else
+    {
+        PrintLine(TEXT("You have Lost! The Answer was: %s"), *HiddenWord);
+    }
+    PrintLine(TEXT("Press 'Enter' to play again"));
+}
+
+void UBullCowCartridge::ProcessGuess(const FString& Input)
+{
+    if (Input == HiddenWord)
+    {
+        bPlayerWon = true;
+        EndGame();
+        return;
+    }
+    if (PlayerInputIsCorrect(Input))
+    {
+
+        return;
+    }
+    if (--Lives == 0)
+    {
+        EndGame();
+        return;
+    }
+    PrintLine(TEXT("You have Entered incorrect Word! Lives remain: %i"), Lives);
+}
+
+bool UBullCowCartridge::IsIsogram(const FString& Input) const
+{
+    for (int32 i = 0; i < Input.Len(); i++)
+    {
+        for (int32 j = i + 1; j < Input.Len(); j++)
+        {
+            if (Input[i] == Input[j])
+            {
+                return false;
+            }
+        }
     }
     return true;
 }
 
-void UBullCowCartridge::WrongInputHandler(const FString& Input)
+TArray<FString> UBullCowCartridge::GetWordList()
 {
-    Lives--;
-    if (Lives > 0)
-    {
-        if (!PlayerInputIsCorrect(Input))
-        {
-            PrintLine(TEXT("You have Entered incorrect Word! Lives remain: %i"), Lives);
-            return;
-        }
-        else
-        {
-            PrintLine(TEXT("Wrong guess! Lives remain: %i"), Lives);
-        }
-    }
-    else
-    {
-        PrintLine(TEXT("You have Lost!"));
-    }
+    const FString WordListPath = FPaths::ProjectContentDir() / TEXT("WordLists/HiddenWords.txt");
+    FFileHelper::LoadFileToStringArray(Words, *WordListPath);
+    FFileHelper::
 }
 
-void UBullCowCartridge::AskForGuess() const
+int UBullCowCartridge::GenerateRaandomNumber(size_t Size)
 {
-    PrintLine(TEXT("Guess the %i letter word!"), WordLength);
+    std::uniform_int_distribution<int> dist(0, Size - 1);
+    return dist(gen);
 }
 
-void UBullCowCartridge::GreetingsMessage() const
+FString UBullCowCartridge::PickAWord()
 {
-    PrintLine(TEXT("Welcome to Bulls & Cows!"));
+    Words[]
 }
 
-void UBullCowCartridge::GenerateHiddenWord()
-{
-    HiddenWord = TEXT("cake"); // TODO: Select from list
-    WordLength = HiddenWord.Len();
-}
