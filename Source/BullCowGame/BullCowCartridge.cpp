@@ -1,14 +1,15 @@
 // Fill out your copyright notice in the Description page of Project Settings.
+#include "BullCowCartridge.h"
 #include <random>
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
-#include "BullCowCartridge.h"
+
+
 
 void UBullCowCartridge::BeginPlay() // When the game starts
 {
     Super::BeginPlay();
 
-    GetWordList();
     SetupGame();
 }
 
@@ -26,7 +27,7 @@ void UBullCowCartridge::OnInput(const FString& Input) // When the player hits en
 
 void UBullCowCartridge::SetupGame()
 {
-    HiddenWord = Words[];
+    HiddenWord = PickAWord();
     Lives = HiddenWord.Len();
     bGameOver = false;
     bPlayerWon = false;
@@ -41,7 +42,6 @@ bool UBullCowCartridge::PlayerInputIsCorrect(const FString& Input) const
 {
     return ((Input.Len() == HiddenWord.Len()) && IsIsogram(Input));
 }
-
 
 void UBullCowCartridge::EndGame()
 {
@@ -93,21 +93,38 @@ bool UBullCowCartridge::IsIsogram(const FString& Input) const
     return true;
 }
 
-TArray<FString> UBullCowCartridge::GetWordList()
+TArray<FString> UBullCowCartridge::GetWordList(int32 minWordLength, int32 maxWordLength)
 {
-    const FString WordListPath = FPaths::ProjectContentDir() / TEXT("WordLists/HiddenWords.txt");
-    FFileHelper::LoadFileToStringArray(Words, *WordListPath);
-    FFileHelper::
+    int32 LowerBound = minWordLength;
+    int32 UpperBound = maxWordLength;
+    TArray<FString> List;
+    TArray<FString> Isograms;
+    FString  WordListPath = FPaths::ProjectContentDir() / TEXT("/WordLists/HiddenWords.txt");
+    FFileHelper::LoadFileToStringArray(List, *WordListPath); 
+    for (const auto& Word : List)
+    {
+        UE_LOG(LogTemp, Warning, TEXT("%s "), *Word);
+        //transform to lowercase and make sure it's an isogram
+        if (IsIsogram(Word) && LowerBound <= Word.Len() && Word.Len() <= UpperBound)
+        {
+            Isograms.Add(Word);
+        }       
+    }
+    return Isograms;
 }
 
-int UBullCowCartridge::GenerateRaandomNumber(size_t Size)
+int UBullCowCartridge::GenerateRandomNumber(int32 Size) const
 {
+    std::random_device rd;
+    std::default_random_engine gen{ rd() };
     std::uniform_int_distribution<int> dist(0, Size - 1);
     return dist(gen);
 }
 
 FString UBullCowCartridge::PickAWord()
 {
-    Words[]
+    TArray<FString> Words = GetWordList(Difficulty + 2, Difficulty + 3);
+    int32 WordIndex = GenerateRandomNumber(Words.Num());
+    return Words[WordIndex];
 }
 

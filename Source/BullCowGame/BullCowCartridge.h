@@ -36,12 +36,7 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	void ProcessGuess(const FString& Input);
 	void EndGame();
 
-	TArray<FString> GetWordList();
-	int GenerateRaandomNumber(size_t Size);
+	TArray<FString> GetWordList(int32 minWordLength, int32 maxWordLength);
+	int GenerateRandomNumber(int32 Size) const;
 	FString PickAWord();
-
-	
-
-		
-	
 };
