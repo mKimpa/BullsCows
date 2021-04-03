@@ -13,6 +13,20 @@ void UBullCowCartridge::BeginPlay() // When the game starts
     SetupGame();
 }
 
+void UBullCowCartridge::SetupGame()
+{
+    HiddenWord = PickAWord();
+    Lives = HiddenWord.Len();
+    bGameOver = false;
+    bPlayerWon = false;
+    ClearScreen();
+    History.Empty();
+    PrintLine(TEXT("Welcome to Bulls & Cows!"));
+    PrintLine(TEXT("Guess the %i letter word!"), HiddenWord.Len());
+
+   
+}
+
 void UBullCowCartridge::OnInput(const FString& Input) // When the player hits enter
 {
     if (!bGameOver)
@@ -25,22 +39,61 @@ void UBullCowCartridge::OnInput(const FString& Input) // When the player hits en
     }
 }
 
-void UBullCowCartridge::SetupGame()
+void UBullCowCartridge::ProcessGuess(const FString& Input)
 {
-    HiddenWord = PickAWord();
-    Lives = HiddenWord.Len();
-    bGameOver = false;
-    bPlayerWon = false;
-    ClearScreen();
-    PrintLine(TEXT("Welcome to Bulls & Cows!"));
-    PrintLine(TEXT("Guess the %i letter word!"), HiddenWord.Len());
-
-    const TCHAR WE[] = TEXT("cake");
+    if (Input == HiddenWord)
+    {
+        bPlayerWon = true;
+        EndGame();
+        return;
+    }
+    if (PlayerInputIsCorrect(Input))
+    {
+        GetAndShowBullsCows(Input);
+    }
+    if (--Lives == 0)
+    {
+        EndGame();
+        return;
+    }
+    PrintLine(TEXT("Wrong! Lives remain: %i"), Lives);
 }
 
 bool UBullCowCartridge::PlayerInputIsCorrect(const FString& Input) const
 {
     return ((Input.Len() == HiddenWord.Len()) && IsIsogram(Input));
+}
+
+void UBullCowCartridge::GetAndShowBullsCows(const FString& Input)
+{
+    ClearScreen();
+    FBullsCows BullsCowsOut;
+    GetBullCows(Input, BullsCowsOut);
+    AddToHistory(GenerateHystoryLine(Input, BullsCowsOut));
+    ShowHistory();
+    ShowBullsCows(BullsCowsOut);
+}
+
+void UBullCowCartridge::GetBullCows(const FString& Input, FBullsCows& BullsCowsOut) const
+{
+    for (int i = 0; i < HiddenWord.Len(); i++)
+    {
+        if (HiddenWord[i] == Input[i])
+        {
+            BullsCowsOut.Bulls++;
+            continue;
+        }
+        int32 index;
+        if (Input.FindChar(HiddenWord[i], index))
+        {
+            BullsCowsOut.Cows++;
+        }
+    }
+}
+
+void UBullCowCartridge::ShowBullsCows(const FBullsCows& BullsCows) const
+{
+    PrintLine(TEXT("You have %i Bulls and %i Cows!"), BullsCows.Bulls, BullsCows.Cows);
 }
 
 void UBullCowCartridge::EndGame()
@@ -55,49 +108,6 @@ void UBullCowCartridge::EndGame()
         PrintLine(TEXT("You have Lost! The Answer was: %s"), *HiddenWord);
     }
     PrintLine(TEXT("Press 'Enter' to play again"));
-}
-
-void UBullCowCartridge::ShowBullsCows(TPair<int32, int32> BullsCows) const
-{
-    PrintLine(TEXT("You have %i Bulls and %i Cows!"), BullsCows.Key, BullsCows.Value);
-}
-
-TPair<int32, int32> UBullCowCartridge::GetBullCows(const FString& Input) const
-{
-    TPair<int32, int32> BullsCows{ 0,0 };
-    for (int i = 0; i < HiddenWord.Len(); i++)
-    {
-        if (HiddenWord[i] == Input[i])
-        {
-            BullsCows.Key++;
-            continue;
-        }
-        if (Input.Contains(&HiddenWord[i]))
-        {
-            BullsCows.Value++;
-        }
-    }
-    return BullsCows;
-}
-
-void UBullCowCartridge::ProcessGuess(const FString& Input)
-{
-    if (Input == HiddenWord)
-    {
-        bPlayerWon = true;
-        EndGame();
-        return;
-    }
-    if (PlayerInputIsCorrect(Input))
-    {
-        ShowBullsCows(GetBullCows(Input));        
-    }
-    if (--Lives == 0)
-    {
-        EndGame();
-        return;
-    }
-    PrintLine(TEXT("You have Entered incorrect Word! Lives remain: %i"), Lives);
 }
 
 bool UBullCowCartridge::IsIsogram(const FString& Input)
@@ -140,3 +150,24 @@ FString UBullCowCartridge::PickAWord()
     return Words[WordIndex];
 }
 
+void UBullCowCartridge::ShowHistory() const
+{
+    PrintLine(TEXT("-----------History-----------"));
+    for (FString Line : History)
+    {
+        PrintLine(TEXT("%s"), *Line);
+    }
+    PrintLine(TEXT("-----------------------------"));
+}
+
+FString UBullCowCartridge::GenerateHystoryLine(const FString& Input, const FBullsCows& BullsCows) const
+{
+    FString Result = Input + TEXT("   B:") + FString::FromInt(BullsCows.Bulls) + TEXT("  C:") + FString::FromInt(BullsCows.Cows);
+    return Result;
+}
+
+
+void UBullCowCartridge::AddToHistory(const FString& HistoryLine)
+{
+    History.Add(HistoryLine);
+}

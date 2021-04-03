@@ -6,6 +6,13 @@
 #include "Console/Cartridge.h"
 #include "BullCowCartridge.generated.h"
 
+
+struct FBullsCows {
+	
+	int32 Bulls = 0;
+	int32 Cows = 0;
+};
+
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 {
@@ -24,6 +31,7 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	FString HiddenWord;
 	bool bGameOver;
 	bool bPlayerWon;
+	TArray<FString> History;
 
 	UPROPERTY(EditAnywhere)
 		int32 Lives = 4;
@@ -34,9 +42,13 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	bool PlayerInputIsCorrect(const FString& Input) const;
 	static bool IsIsogram(const FString& Input);
 	void ProcessGuess(const FString& Input);
+	void GetAndShowBullsCows(const FString& Input);
 	void EndGame();
-	void ShowBullsCows(TPair<int32, int32> BullsCows) const;
-	TPair<int32, int32> GetBullCows(const FString& Input) const;
+	void ShowBullsCows(const FBullsCows& BullsCows) const;
+	void GetBullCows(const FString& Input, FBullsCows& BullsCowsOut) const;
+	void ShowHistory() const;
+	FString GenerateHystoryLine(const FString& Input, const FBullsCows& BullsCows) const;
+	void AddToHistory(const FString& HistoryLine);
 
 
 	TArray<FString> GetWordList(int32 minWordLength, int32 maxWordLength);
