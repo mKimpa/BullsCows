@@ -32,11 +32,14 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 		int32 Difficulty = 1;
 
 	bool PlayerInputIsCorrect(const FString& Input) const;
-	bool IsIsogram(const FString& Input) const;
+	static bool IsIsogram(const FString& Input);
 	void ProcessGuess(const FString& Input);
 	void EndGame();
+	void ShowBullsCows(TPair<int32, int32> BullsCows) const;
+	TPair<int32, int32> GetBullCows(const FString& Input) const;
+
 
 	TArray<FString> GetWordList(int32 minWordLength, int32 maxWordLength);
-	int GenerateRandomNumber(int32 Size) const;
+	int32 GenerateRandomNumber(int32 Size) const;
 	FString PickAWord();
 };

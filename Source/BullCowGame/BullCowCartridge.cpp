@@ -1,6 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "BullCowCartridge.h"
-#include <random>
+#include "Math/UnrealMathUtility.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
@@ -57,6 +57,29 @@ void UBullCowCartridge::EndGame()
     PrintLine(TEXT("Press 'Enter' to play again"));
 }
 
+void UBullCowCartridge::ShowBullsCows(TPair<int32, int32> BullsCows) const
+{
+    PrintLine(TEXT("You have %i Bulls and %i Cows!"), BullsCows.Key, BullsCows.Value);
+}
+
+TPair<int32, int32> UBullCowCartridge::GetBullCows(const FString& Input) const
+{
+    TPair<int32, int32> BullsCows{ 0,0 };
+    for (int i = 0; i < HiddenWord.Len(); i++)
+    {
+        if (HiddenWord[i] == Input[i])
+        {
+            BullsCows.Key++;
+            continue;
+        }
+        if (Input.Contains(&HiddenWord[i]))
+        {
+            BullsCows.Value++;
+        }
+    }
+    return BullsCows;
+}
+
 void UBullCowCartridge::ProcessGuess(const FString& Input)
 {
     if (Input == HiddenWord)
@@ -67,8 +90,7 @@ void UBullCowCartridge::ProcessGuess(const FString& Input)
     }
     if (PlayerInputIsCorrect(Input))
     {
-
-        return;
+        ShowBullsCows(GetBullCows(Input));        
     }
     if (--Lives == 0)
     {
@@ -78,7 +100,7 @@ void UBullCowCartridge::ProcessGuess(const FString& Input)
     PrintLine(TEXT("You have Entered incorrect Word! Lives remain: %i"), Lives);
 }
 
-bool UBullCowCartridge::IsIsogram(const FString& Input) const
+bool UBullCowCartridge::IsIsogram(const FString& Input)
 {
     for (int32 i = 0; i < Input.Len(); i++)
     {
@@ -95,30 +117,20 @@ bool UBullCowCartridge::IsIsogram(const FString& Input) const
 
 TArray<FString> UBullCowCartridge::GetWordList(int32 minWordLength, int32 maxWordLength)
 {
-    int32 LowerBound = minWordLength;
-    int32 UpperBound = maxWordLength;
     TArray<FString> List;
     TArray<FString> Isograms;
     FString  WordListPath = FPaths::ProjectContentDir() / TEXT("/WordLists/HiddenWords.txt");
-    FFileHelper::LoadFileToStringArray(List, *WordListPath); 
-    for (const auto& Word : List)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("%s "), *Word);
-        //transform to lowercase and make sure it's an isogram
-        if (IsIsogram(Word) && LowerBound <= Word.Len() && Word.Len() <= UpperBound)
-        {
-            Isograms.Add(Word);
-        }       
-    }
+    FFileHelper::LoadFileToStringArrayWithPredicate(
+        Isograms,
+        *WordListPath,
+        [&minWordLength, &maxWordLength](const FString& Word) 
+        {return (IsIsogram(Word) && minWordLength <= Word.Len() && Word.Len() <= maxWordLength); });
     return Isograms;
 }
 
-int UBullCowCartridge::GenerateRandomNumber(int32 Size) const
+int32 UBullCowCartridge::GenerateRandomNumber(int32 Size) const
 {
-    std::random_device rd;
-    std::default_random_engine gen{ rd() };
-    std::uniform_int_distribution<int> dist(0, Size - 1);
-    return dist(gen);
+    return FMath::RandRange(0, Size - 1);
 }
 
 FString UBullCowCartridge::PickAWord()
