@@ -1,7 +1,9 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 #include "BullCowCartridge.h"
+#include "Kismet/GameplayStatics.h"
 #include "Math/UnrealMathUtility.h"
 #include "Misc/FileHelper.h"
+//#include "BCSaveGame.h"
 #include "Misc/Paths.h"
 
 
@@ -10,40 +12,104 @@ void UBullCowCartridge::BeginPlay() // When the game starts
 {
     Super::BeginPlay();
 
-    SetupGame();
+    LoadHighScores();
+    UpdateScreen();
 }
 
 void UBullCowCartridge::SetupGame()
 {
     HiddenWord = PickAWord();
     Lives = HiddenWord.Len();
-    bGameOver = false;
     bPlayerWon = false;
     ClearScreen();
-    History.Empty();
-    PrintLine(TEXT("Welcome to Bulls & Cows!"));
-    PrintLine(TEXT("Guess the %i letter word!"), HiddenWord.Len());
-
-   
+    History.Empty();   
 }
 
 void UBullCowCartridge::OnInput(const FString& Input) // When the player hits enter
 {
-    if (!bGameOver)
+    switch (GameState) 
     {
+    case UGameState::Wellcome:
+        GameState = UGameState::MainMenu;
+        UpdateScreen();
+        break;
+    case UGameState::MainMenu:
+        if (Input == "1")
+        {
+            GameState = UGameState::Play;
+            SetupGame();
+            UpdateScreen();
+        }
+        else if (Input == "2")
+        {
+            GameState = UGameState::SelectDifficulty;
+            UpdateScreen();
+        }
+        else if (Input == "3")
+        {
+            GameState = UGameState::HighScore;
+            UpdateScreen();
+        }
+        else if (Input == "4")
+        {
+            exit(0);
+        }
+        else
+        {
+            UpdateScreen();
+            PrintLine(TEXT("Incorrect input!"));
+            PrintLine(TEXT("Please select right menu option!"));
+        }
+        break;
+    case UGameState::SelectDifficulty:
+        if (Input == "1")
+        {
+            GameState = UGameState::MainMenu;
+            Difficulty = 1;
+            UpdateScreen();
+        }
+        else if (Input == "2")
+        {
+            GameState = UGameState::MainMenu;
+            Difficulty = 2;
+            UpdateScreen();
+        }
+        else if (Input == "3")
+        {
+            GameState = UGameState::MainMenu;
+            Difficulty = 3;
+            UpdateScreen();
+        }
+        else
+        {
+            UpdateScreen();
+            PrintLine(TEXT("Incorrect input!"));
+            PrintLine(TEXT("Please select right menu option!"));
+        }
+        break;
+    case UGameState::Play:
         ProcessGuess(Input);
-    }
-    else
-    {
-        SetupGame();     
-    }
+        break;
+    case UGameState::InputName:
+        UpdateHighScores(Input, Score);
+        SaveHighScores();
+        GameState = UGameState::HighScore;
+        UpdateScreen();
+        break;
+    case UGameState::HighScore:
+        
+        GameState = UGameState::MainMenu;
+        UpdateScreen();
+    }    
 }
+
 
 void UBullCowCartridge::ProcessGuess(const FString& Input)
 {
     if (Input == HiddenWord)
     {
         bPlayerWon = true;
+        Score += Lives * HiddenWord.Len();
         EndGame();
         return;
     }
@@ -98,14 +164,17 @@ void UBullCowCartridge::ShowBullsCows(const FBullsCows& BullsCows) const
 
 void UBullCowCartridge::EndGame()
 {
-    bGameOver = true;
+    ClearScreen();
     if (bPlayerWon)
     {
-        PrintLine(TEXT("Congratulations! You have Won! The Answer was: %s"), *HiddenWord);
+        PrintLine(TEXT("Congratulations! You guessed the word!"));
+        PrintLine(TEXT("The Answer was : % s"), *HiddenWord);
+        SetupGame();
     }
     else
     {
         PrintLine(TEXT("You have Lost! The Answer was: %s"), *HiddenWord);
+        GameState = UGameState::InputName;
     }
     PrintLine(TEXT("Press 'Enter' to play again"));
 }
@@ -166,8 +235,141 @@ FString UBullCowCartridge::GenerateHystoryLine(const FString& Input, const FBull
     return Result;
 }
 
-
 void UBullCowCartridge::AddToHistory(const FString& HistoryLine)
 {
     History.Add(HistoryLine);
+}
+
+void UBullCowCartridge::UpdateScreen() const
+{
+    switch (GameState)
+    {
+    case UGameState::Wellcome:
+        ShowWellcomeMessage();
+        break;
+    case UGameState::MainMenu:
+        ShowMainMenu();
+        break;
+    case UGameState::SelectDifficulty:
+        ShowSelectDifficultyMenu();
+        break;
+    case UGameState::Play:
+        ShowPlayScreen();
+        break;
+    case UGameState::InputName:
+        ShowNameInputScreen();
+        break;
+    case UGameState::HighScore:
+        ShowHighScore();
+    }
+}
+
+void UBullCowCartridge::ShowWellcomeMessage() const
+{
+    PrintLine(TEXT("Welcome to Bulls & Cows!"));
+    PrintLine(TEXT("Try to guess the secret word!"));
+    PrintLine(TEXT("Press 'Enter' to Continue..."));
+}
+
+void UBullCowCartridge::ShowMainMenu() const
+{
+    ClearScreen();
+    PrintLine(TEXT("----------Main Menu----------"));
+    PrintLine(TEXT(" 1. Play"));
+    PrintLine(TEXT(" 2. Select difficulty"));
+    PrintLine(TEXT(" 3. High Scores"));
+    PrintLine(TEXT(" 4. Exit"));
+    PrintLine(TEXT("-----------------------------"));
+    PrintLine(TEXT("Please enter menu option number..."));
+}
+
+void UBullCowCartridge::ShowSelectDifficultyMenu() const
+{
+    ClearScreen();
+    PrintLine(TEXT("------Select Difficulty------"));
+    PrintLine(TEXT(" 1. Easy"));
+    PrintLine(TEXT(" 2. Normal"));
+    PrintLine(TEXT(" 3. Hard"));
+    PrintLine(TEXT("-----------------------------"));
+    PrintLine(TEXT("Please enter the menu item number..."));
+}
+
+void UBullCowCartridge::ShowPlayScreen() const
+{
+    ClearScreen();
+    ShowHistory();
+    PrintLine(TEXT("Guess the %i letter word!"), HiddenWord.Len());
+}
+
+void UBullCowCartridge::ShowNameInputScreen() const
+{
+    ClearScreen();
+    PrintLine(TEXT("Please enter your name:"));
+
+}
+
+void UBullCowCartridge::ShowHighScore() const
+{
+    ClearScreen();
+    PrintLine(TEXT("----------High Scores--------"));
+    for (int i = 0; i < HighScores.Num(); i++)
+    {
+        PrintLine(TEXT(" %i. %s   %i"), i + 1, *HighScores[i].Name, HighScores[i].Score);
+    }
+    PrintLine(TEXT("-----------------------------"));
+    PrintLine(TEXT("Press 'Enter' to continue..."));
+}
+
+void UBullCowCartridge::UpdateHighScores(const FString& Name, const int32& Score)
+{
+    if (HighScores.Num() == 0)
+    {
+        AddPlayerScoreToHighScores(Name, Score, 0);
+        return;
+    }
+    for (int i = 0; i < HighScores.Num(); i++)
+    {
+        if (Score > HighScores[i].Score)
+        {
+            AddPlayerScoreToHighScores(Name, Score, i);
+            while (HighScores.Num() > HighScoreLength)
+            {
+                HighScores.RemoveAt(HighScoreLength);
+            }
+            return;
+        }
+        if (HighScores.Num() < 10)
+        {
+            AddPlayerScoreToHighScores(Name, Score, HighScores.Num());
+        }
+    }
+        
+}
+
+void UBullCowCartridge::AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 index)
+{
+    FPlayerScore PlayerScore = { Name, Score };
+    if (index == 0)
+    {
+        HighScores.Add(PlayerScore);
+        return;
+    }
+    HighScores.Insert(PlayerScore, index);
+}
+
+void UBullCowCartridge::LoadHighScores()
+{
+    UBCSaveGame* SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::CreateSaveGameObject(UBCSaveGame::StaticClass()));
+    if (UGameplayStatics::DoesSaveGameExist("HighScores", 0))
+    {
+        SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("HighScores"), 0));
+        HighScores = SaveGameInstance->HighScore;
+    }    
+}
+
+void UBullCowCartridge::SaveHighScores()
+{
+    UBCSaveGame* SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::CreateSaveGameObject(UBCSaveGame::StaticClass()));
+    SaveGameInstance->HighScore = HighScores;
+    UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("HighScores"), 0);
 }

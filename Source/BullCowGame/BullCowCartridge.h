@@ -4,13 +4,24 @@
 
 #include "CoreMinimal.h"
 #include "Console/Cartridge.h"
+#include "BCSaveGame.h"
 #include "BullCowCartridge.generated.h"
 
 
-struct FBullsCows {
-	
+struct FBullsCows
+{
 	int32 Bulls = 0;
 	int32 Cows = 0;
+};
+
+enum UGameState 
+{
+	Wellcome = 0,
+	MainMenu = 1,
+	SelectDifficulty = 2,
+	Play = 3,
+	InputName = 4,
+	HighScore = 5
 };
 
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -24,20 +35,23 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	// Your declarations go below!
 	void SetupGame();
 
+	UPROPERTY(EditAnywhere)
+	int32 HighScoreLength = 5;
+
 	
 	
 	private:
 	TArray<FString> Words;
 	FString HiddenWord;
-	bool bGameOver;
 	bool bPlayerWon;
 	TArray<FString> History;
+	UGameState GameState = UGameState::Wellcome;
+	TArray<FPlayerScore> HighScores;
+	int32 Score;
 
-	UPROPERTY(EditAnywhere)
-		int32 Lives = 4;
 
-	UPROPERTY(EditAnywhere)
-		int32 Difficulty = 1;
+	int32 Lives;
+	int32 Difficulty = 1;
 
 	bool PlayerInputIsCorrect(const FString& Input) const;
 	static bool IsIsogram(const FString& Input);
@@ -49,7 +63,21 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	void ShowHistory() const;
 	FString GenerateHystoryLine(const FString& Input, const FBullsCows& BullsCows) const;
 	void AddToHistory(const FString& HistoryLine);
-
+	//void PlayGame(const FString& Input);
+	void UpdateHighScores(const FString& Name, const int32& Score);
+	void LoadHighScores();
+	void SaveHighScores();
+	void AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 index);
+	
+	// Interface
+	void UpdateScreen() const;
+	void ShowWellcomeMessage() const;
+	void ShowMainMenu() const;
+	void ShowSelectDifficultyMenu() const;
+	void ShowPlayScreen() const;
+	void ShowNameInputScreen() const;
+	void ShowHighScore() const;
+ 
 
 	TArray<FString> GetWordList(int32 minWordLength, int32 maxWordLength);
 	int32 GenerateRandomNumber(int32 Size) const;
