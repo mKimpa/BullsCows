@@ -44,6 +44,7 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	TArray<FString> Words;
 	FString HiddenWord;
 	bool bPlayerWon;
+	bool bGameOver;
 	TArray<FString> History;
 	UGameState GameState = UGameState::Wellcome;
 	TArray<FPlayerScore> HighScores;

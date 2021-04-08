@@ -11,7 +11,9 @@ USTRUCT() struct FPlayerScore
 {
 	GENERATED_BODY()
 
-		FString Name;
+	UPROPERTY(VisibleAnywhere)
+	FString Name;
+	UPROPERTY(VisibleAnywhere)
 	int32 Score = 0;
 };
 /**
@@ -25,6 +27,6 @@ class BULLCOWGAME_API UBCSaveGame : public USaveGame
 public:
 	UBCSaveGame();
 
-	UPROPERTY(EditAnywhere)
-		TArray<FPlayerScore> HighScore;
+	UPROPERTY(VisibleAnywhere)
+	TArray<FPlayerScore> HighScore;
 };

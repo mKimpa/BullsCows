@@ -18,9 +18,15 @@ void UBullCowCartridge::BeginPlay() // When the game starts
 
 void UBullCowCartridge::SetupGame()
 {
+    if (bGameOver)
+    {
+        Score = 0;
+    }
     HiddenWord = PickAWord();
+    GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Orange, *HiddenWord);
     Lives = HiddenWord.Len();
     bPlayerWon = false;
+    bGameOver = false; 
     ClearScreen();
     History.Empty();   
 }
@@ -106,6 +112,17 @@ void UBullCowCartridge::OnInput(const FString& Input) // When the player hits en
 
 void UBullCowCartridge::ProcessGuess(const FString& Input)
 {
+    if (bPlayerWon)
+    {
+        SetupGame();
+        UpdateScreen();
+    }
+    if (bGameOver)
+    {
+        GameState = UGameState::InputName;
+        UpdateScreen();
+        return;
+    }
     if (Input == HiddenWord)
     {
         bPlayerWon = true;
@@ -169,12 +186,11 @@ void UBullCowCartridge::EndGame()
     {
         PrintLine(TEXT("Congratulations! You guessed the word!"));
         PrintLine(TEXT("The Answer was : % s"), *HiddenWord);
-        SetupGame();
     }
     else
     {
         PrintLine(TEXT("You have Lost! The Answer was: %s"), *HiddenWord);
-        GameState = UGameState::InputName;
+        bGameOver = true;
     }
     PrintLine(TEXT("Press 'Enter' to play again"));
 }
@@ -322,11 +338,11 @@ void UBullCowCartridge::ShowHighScore() const
 
 void UBullCowCartridge::UpdateHighScores(const FString& Name, const int32& Score)
 {
-    if (HighScores.Num() == 0)
-    {
-        AddPlayerScoreToHighScores(Name, Score, 0);
-        return;
-    }
+    //if (HighScores.Num() == 0)
+    //{
+    //    AddPlayerScoreToHighScores(Name, Score, 0);
+    //    return;
+    //}
     for (int i = 0; i < HighScores.Num(); i++)
     {
         if (Score > HighScores[i].Score)
@@ -338,12 +354,11 @@ void UBullCowCartridge::UpdateHighScores(const FString& Name, const int32& Score
             }
             return;
         }
-        if (HighScores.Num() < 10)
-        {
-            AddPlayerScoreToHighScores(Name, Score, HighScores.Num());
-        }
     }
-        
+    if (HighScores.Num() < HighScoreLength)
+    {
+        AddPlayerScoreToHighScores(Name, Score, HighScores.Num());
+    }
 }
 
 void UBullCowCartridge::AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 index)
@@ -359,17 +374,17 @@ void UBullCowCartridge::AddPlayerScoreToHighScores(const FString& Name, const in
 
 void UBullCowCartridge::LoadHighScores()
 {
-    UBCSaveGame* SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::CreateSaveGameObject(UBCSaveGame::StaticClass()));
-    if (UGameplayStatics::DoesSaveGameExist("HighScores", 0))
+    if (UBCSaveGame* SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("HighScores"), 0)))
     {
-        SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::LoadGameFromSlot(TEXT("HighScores"), 0));
         HighScores = SaveGameInstance->HighScore;
     }    
 }
 
 void UBullCowCartridge::SaveHighScores()
 {
-    UBCSaveGame* SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::CreateSaveGameObject(UBCSaveGame::StaticClass()));
-    SaveGameInstance->HighScore = HighScores;
-    UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("HighScores"), 0);
+    if (UBCSaveGame* SaveGameInstance = Cast<UBCSaveGame>(UGameplayStatics::CreateSaveGameObject(UBCSaveGame::StaticClass())))
+    {
+        SaveGameInstance->HighScore = HighScores;
+        UGameplayStatics::SaveGameToSlot(SaveGameInstance, TEXT("HighScores"), 0);
+    }
 }
