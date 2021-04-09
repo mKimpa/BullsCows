@@ -38,6 +38,9 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	UPROPERTY(EditAnywhere)
 	int32 HighScoreLength = 5;
 
+	UPROPERTY(EditAnywhere)
+	int32 HighScoresNameFieldLength = 20;
+
 	
 	
 	private:

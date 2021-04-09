@@ -327,10 +327,26 @@ void UBullCowCartridge::ShowNameInputScreen() const
 void UBullCowCartridge::ShowHighScore() const
 {
     ClearScreen();
+    
     PrintLine(TEXT("----------High Scores--------"));
     for (int i = 0; i < HighScores.Num(); i++)
     {
-        PrintLine(TEXT(" %i. %s   %i"), i + 1, *HighScores[i].Name, HighScores[i].Score);
+        int SpacesCount = HighScoresNameFieldLength - HighScores[i].Name.Len();
+        FString Spaces = "";
+        FString Name = "";
+        for (int i = 0; i < SpacesCount; i++)
+        {
+            Spaces += '.';
+        }
+        if (HighScores[i].Name.Len() >= HighScoresNameFieldLength)
+        {
+            Name = HighScores[i].Name.LeftChop(HighScores[i].Name.Len() - HighScoresNameFieldLength + 1);
+        }
+        else
+        {
+            Name = HighScores[i].Name;
+        }
+        PrintLine(TEXT(" %i. %s%s%i"), i + 1, *Name, *Spaces, HighScores[i].Score);
     }
     PrintLine(TEXT("-----------------------------"));
     PrintLine(TEXT("Press 'Enter' to continue..."));
@@ -338,11 +354,6 @@ void UBullCowCartridge::ShowHighScore() const
 
 void UBullCowCartridge::UpdateHighScores(const FString& Name, const int32& Score)
 {
-    //if (HighScores.Num() == 0)
-    //{
-    //    AddPlayerScoreToHighScores(Name, Score, 0);
-    //    return;
-    //}
     for (int i = 0; i < HighScores.Num(); i++)
     {
         if (Score > HighScores[i].Score)
