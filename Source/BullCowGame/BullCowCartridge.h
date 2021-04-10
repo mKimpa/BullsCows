@@ -71,7 +71,7 @@ class BULLCOWGAME_API UBullCowCartridge : public UCartridge
 	void UpdateHighScores(const FString& Name, const int32& Score);
 	void LoadHighScores();
 	void SaveHighScores();
-	void AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 index);
+	void AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 Index);
 	
 	// Interface
 	void UpdateScreen() const;

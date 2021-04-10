@@ -186,13 +186,15 @@ void UBullCowCartridge::EndGame()
     {
         PrintLine(TEXT("Congratulations! You guessed the word!"));
         PrintLine(TEXT("The Answer was : % s"), *HiddenWord);
+        PrintLine(TEXT("Press 'Enter' to play again"));
     }
     else
     {
         PrintLine(TEXT("You have Lost! The Answer was: %s"), *HiddenWord);
         bGameOver = true;
+        PrintLine(TEXT("Press 'Enter' to continue"));
     }
-    PrintLine(TEXT("Press 'Enter' to play again"));
+    
 }
 
 bool UBullCowCartridge::IsIsogram(const FString& Input)
@@ -372,15 +374,10 @@ void UBullCowCartridge::UpdateHighScores(const FString& Name, const int32& Score
     }
 }
 
-void UBullCowCartridge::AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 index)
+void UBullCowCartridge::AddPlayerScoreToHighScores(const FString& Name, const int32& Score, int32 Index)
 {
-    FPlayerScore PlayerScore = { Name, Score };
-    if (index == 0)
-    {
-        HighScores.Add(PlayerScore);
-        return;
-    }
-    HighScores.Insert(PlayerScore, index);
+    FPlayerScore PlayerScore = { Name.TrimStartAndEnd(), Score };
+    HighScores.Insert(PlayerScore, Index);
 }
 
 void UBullCowCartridge::LoadHighScores()
